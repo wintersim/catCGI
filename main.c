@@ -33,22 +33,15 @@ int getMimeType(char *path);
  */
 //sudo gdb catAjax $(pgrep catAjax)
 
-int hure = 1;
+int wait = 1;
 
 void wait_for_gdb_to_attach() { //DEBUG ONLY!
-    while (hure) {
+    while (wait) {
         sleep(1); // sleep for 1 second
     }
 }
 #endif
 
-
-/*
- * Redundanten Code entfernen (z.B. bei String parsing funks) ✓
- * Anzahl der bilder in datenbank per funktion ermitteln (für nummer generation) ✓
- * Datenbank fehler in log speichern ✓
- * Falsche request ('hacker') in log speichern (IP. User-Agent, Zeit,etc..) ✓
- */
 
 int main() {
 #ifdef DEBUG
