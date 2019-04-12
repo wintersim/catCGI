@@ -1,5 +1,5 @@
 # catCGI
-[Caturbate's](http://caturbate.ga) CGI script.
+[Catgasm's](http://catgasm.cc) CGI script.
 
 ## Usage
 ```javascript
