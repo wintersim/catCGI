@@ -95,6 +95,14 @@ int main() {
     for(int i = 0; i < r.fieldsz; i++) {
         if(strncmp(r.fields[i].val, "cat", 3) == 0) { //strncmp to prevent buffer-overflow
             size_t rand = getRandomNumber(1, catCount); //Random Number
+#ifdef DEBUG
+            khttp_puts(&r, "<pre>");
+            khttp_puts(&r, "Random Number: ");
+            char tmp[40] = {};
+            sprintf(tmp,"%d", (int)rand);
+            khttp_puts(&r, tmp);
+            khttp_puts(&r, "</pre>");
+#endif
             char* str = calcImg(db, (int)rand); //get image-tag based on random number
             khttp_puts(&r, str);
        } else {
@@ -128,6 +136,9 @@ char *imgToB64(const char *path, size_t *len) {
 
     if(file == NULL) { //Check if file exists
         logEvent("File could not be opened[imgToBase64]",ERROR);
+        char tmp[512] = "";
+        sprintf(tmp, "File: %s\n", path);
+        logEvent(tmp, ERROR);
         return NULL;
     }
 
