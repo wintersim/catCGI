@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <time.h>
+#include <errno.h>
 
 #define DEFAULT_LOG_PATH "/var/log/caturbate/cgi.log"
 #define MAX_TIMESTAMP_BUFFER 100
