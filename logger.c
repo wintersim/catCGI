@@ -6,7 +6,6 @@
 #include <malloc.h>
 #include "logger.h"
 
-//TODO Pass function where it happened (Database, HTTP Parser, etc..)
 
 /*
  * Writes a message with date and time to a logfile
@@ -56,4 +55,19 @@ void logEvent(const char *logStr, logType type){
 
     fclose(logFile);
     free(log);
+}
+
+/*
+ * Writes formatted message to a logfile
+ */
+
+void logEventv2(logType type, const char* format, ...) {
+    va_list list;
+    int totalLen;
+    char str[MAX_LOG_REASON_LEN];
+
+    va_start(list, format);
+    vsnprintf(str,MAX_LOG_REASON_LEN,format, list);
+    va_end(list);
+    logEvent(str, type);
 }
