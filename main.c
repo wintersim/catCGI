@@ -76,7 +76,7 @@ int main() {
     sqlite3 *db; //Database handle
 
     if(openDb(&db) != 0) {
-        logEvent("Failed to open database", ERROR);
+        logEventv2(ERROR,"Failed to open databse");
         return -1;
     }
 
@@ -133,10 +133,9 @@ char *imgToB64(const char *path, size_t *len) {
     FILE *file = fopen(path, "rb"); //Open file in binary read mode
 
     if(file == NULL) { //Check if file exists
-        logEvent("File could not be opened[imgToBase64]",ERROR);
         char tmp[512] = "";
         sprintf(tmp, "File: %s\n", path);
-        logEvent(tmp, ERROR);
+        logEventv2(ERROR,"File could not be opened[imgToBase64] File: %s", tmp);
         return NULL;
     }
 
@@ -150,7 +149,7 @@ char *imgToB64(const char *path, size_t *len) {
 
     if (!buffer)
     {
-        logEvent("Memory Error[imgToBase64]", ERROR);
+        logEventv2(ERROR,"Memory Error[imgToBase64]");
         fclose(file);
         return NULL;
     }
@@ -220,7 +219,7 @@ char* calcImg(sqlite3 *db,int nr) {
     int mime = getMimeType(imgPath);
 
     if(mime < 0) {
-        logEvent("Could not determine mime type", ERROR);
+        logEventv2(ERROR, "Could not determine mime type[calcImg]");
         return NULL;
     }
 
@@ -247,12 +246,8 @@ char* calcImg(sqlite3 *db,int nr) {
 }
 
 void logClient(struct kreq *r){
-    const char *format = "%s sent invalid POST\n\tUser-Agent: %s";
     char *ipAddr = 0;
     char *userAgent = 0;
-    char *log = 0;
-
-    size_t size = 0;
 
     //Get Remote Address
     ipAddr = r->remote;
@@ -264,15 +259,7 @@ void logClient(struct kreq *r){
         }
     }
 
-    //Allocate Memory and format the string
-    size = strlen(ipAddr) + strlen(format) + strlen(userAgent);
-    log = malloc(size * sizeof(char));
-
-    sprintf(log, format, ipAddr, userAgent);
-    logEvent(log, WARNING);
-
-
-    free(log);
+    logEventv2(WARNING, "%s - %s sent invalid request.", ipAddr, userAgent);
 }
 
 
