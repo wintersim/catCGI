@@ -82,6 +82,11 @@ int main() {
 
     uint32_t catCount = getCatCountDb(db); //Number of pictures stored in database
 
+    if(catCount <= 0) {
+        logEventv2(ERROR, "getCatCountDb failed. Catcount: %d", catCount);
+        return -1;
+    }
+
     //Check content, which is sent with POST and deliver image tag
 
     for(int i = 0; i < r.fieldsz; i++) {
