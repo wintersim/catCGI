@@ -81,7 +81,7 @@ uint32_t getCatCountDb(sqlite3 *db) {
     sqlite3_stmt *res;
     intmax_t iCount = -1;
 
-    int rc = sqlite3_prepare_v2(db, "SELECT COUNT(*) FROM Cat", -1, &res, NULL); //Compile to byte-code
+    int rc = sqlite3_prepare_v2(db, "SELECT COUNT(Id) FROM Cat", -1, &res, NULL); //Compile to byte-code
 
     if(rc != SQLITE_OK) {
         logEvent("Failed to fetch database data(count)", ERROR);
