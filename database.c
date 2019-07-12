@@ -42,7 +42,7 @@ char* queryDb(sqlite3 *db, int nr) {
 
     //Command wich will be executed
     //@num gets replaced with function attribute 'nr'
-    char *sql = "SELECT NAME FROM CAT WHERE ID = @num";
+    char *sql = "SELECT NAME FROM CAT WHERE ID = @num;";
 
     rc = sqlite3_prepare_v2(db, sql, -1, &res, NULL); //Convert statement to byte-code
 
@@ -80,7 +80,7 @@ char* queryDb(sqlite3 *db, int nr) {
 uint32_t getCatCountDb(sqlite3 *db) {
     sqlite3_stmt *res;
     intmax_t iCount = -1;
-    const char sql[] = "\"SELECT COUNT(Id) FROM Cat\"";
+    const char sql[] = "\"SELECT COUNT(Id) FROM Cat\";";
 
     int rc = sqlite3_prepare_v2(db, sql, -1, &res, NULL); //Compile to byte-code
 
