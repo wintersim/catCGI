@@ -105,6 +105,7 @@ int main() {
 #endif
             char* str = calcImg(db, (int)rand); //get image-tag based on random number
             khttp_puts(&r, str);
+            updateClicks(db);
        } else {
            logClient(&r);
       }

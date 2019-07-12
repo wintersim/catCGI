@@ -18,5 +18,6 @@ int openDb(sqlite3**);
 void closeDb(sqlite3*);
 char* queryDb(sqlite3*,int);
 uint32_t getCatCountDb(sqlite3*);
+void updateClicks(sqlite3*);
 
 #endif //CATAJAX_DATABASE_H

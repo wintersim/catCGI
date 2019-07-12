@@ -107,3 +107,28 @@ uint32_t getCatCountDb(sqlite3 *db) {
     sqlite3_finalize(res);
     return (uint32_t)iCount;
 }
+
+void updateClicks(sqlite3 *db) {
+    char sql[] = "UPDATE Clicks SET Clicks = Clicks + 1 WHERE Name = \"cat\";";
+    sqlite3_stmt *res;
+
+    int rc = sqlite3_prepare_v2(db, sql, -1, &res, NULL); //Compile to byte-code
+
+    if(rc != SQLITE_OK) {
+        logEvent("Failed to prepare Statement[updateClicks]", ERROR);
+        logEvent(sqlite3_errmsg(db), ERROR);
+        sqlite3_close(db);
+        return;
+    }
+
+    //Run the statement
+    rc = sqlite3_step(res);
+
+    if(rc != SQLITE_DONE) {
+        logEvent("Failed to execute statement[updateClicks]", ERROR);
+        logEvent(sqlite3_errmsg(db), ERROR);
+        sqlite3_close(db);
+        return;
+    }
+    sqlite3_finalize(res);
+}
