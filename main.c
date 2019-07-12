@@ -48,9 +48,8 @@ int main() {
     wait_for_gdb_to_attach(); //DEBUG
 #endif
 
-    /*
-     * Initialize KCGI
-     */
+
+    //Initialize KCGI
     struct kreq r;
     const char *page = "index";
     if (KCGI_OK != khttp_parse(&r, NULL, 0, &page, 1, 0)) {
@@ -64,20 +63,16 @@ int main() {
                "%s", kmimetypes[KMIME_TEXT_HTML]); //text/html
     khttp_body(&r);
 
-    /*
-     * Only HTTP Post allowed
-     */
 
+    // Only HTTP Post allowed
     if(r.method != KMETHOD_POST) {
         khttp_puts(&r, "Only HTTP-POST request allowed");
         khttp_free(&r);
         return -1;
     }
 
-   /*
-    * Open database
-    */
 
+    //Open Database
     sqlite3 *db; //Database handle
 
     if(openDb(&db) != 0) {
@@ -85,12 +80,9 @@ int main() {
         return -1;
     }
 
-    /*
-     * Check content, which is sent with POST and deliver image tag
-     */
-
-
     uint32_t catCount = getCatCountDb(db); //Number of pictures stored in database
+
+    //Check content, which is sent with POST and deliver image tag
 
     for(int i = 0; i < r.fieldsz; i++) {
         if(strncmp(r.fields[i].val, "cat", 3) == 0) { //strncmp to prevent buffer-overflow
@@ -257,25 +249,17 @@ void logClient(struct kreq *r){
 
     size_t size = 0;
 
-    /*
-     * Get Remote Address
-     */
-
+    //Get Remote Address
     ipAddr = r->remote;
 
-    /*
-     * Get User-Agent
-     */
-
+    //Get User-Agent
     for(int i = 0; i < r->reqsz; i++) {
         if(strcmp("User-Agent", r->reqs[i].key) == 0) {
             userAgent = r->reqs[i].val;
         }
     }
-    /*
-     * Allocate Memory and format the string
-     */
 
+    //Allocate Memory and format the string
     size = strlen(ipAddr) + strlen(format) + strlen(userAgent);
     log = malloc(size * sizeof(char));
 
@@ -287,7 +271,9 @@ void logClient(struct kreq *r){
 }
 
 
-//Generates a random number using sodium library
+/*
+ * Generates a random number using sodium library
+ */
 uint32_t getRandomNumber(uint32_t rangeStart, uint32_t rangeEnd){
     return randombytes_uniform(rangeEnd) + rangeStart;
 }

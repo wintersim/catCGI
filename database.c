@@ -60,15 +60,11 @@ char* queryDb(sqlite3 *db, int nr) {
 
     int step = sqlite3_step(res); //Execute the statement
 
-    /*
-     * Save the image-path wich is in column 0 in extra buffer, because the string will be free'd by database when closed
-     */
-
+    //Copy the image-path which is in column 0 in extra buffer
     if(step == SQLITE_ROW) {
         const char *pTemp = (const char*) sqlite3_column_text(res, 0);
         size_t len = strlen(pTemp);
         retStr = malloc(len * sizeof(char));
-        //strncpy(retStr, pTemp, len);
         strcpy(retStr, pTemp);
     }
 

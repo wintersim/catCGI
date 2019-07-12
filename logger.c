@@ -25,46 +25,32 @@ void logEvent(const char *logStr, logType type){
     time_t t;
     struct tm *timeInfo;
 
-    /*
-     *Open log file in append mode
-     */
 
+    //Open log file in append mode
     logFile = fopen(DEFAULT_LOG_PATH, "a");
 
     if(logFile == NULL) {
         return;
     }
 
-    /*
-     * Generate date&time string based on current time
-     */
-
+    //Generate date and time string based on current time
     t = time(NULL);
     timeInfo = localtime(&t);
     strftime(timestamp, MAX_TIMESTAMP_BUFFER,"%x at %X", timeInfo);
 
-    /*
-     * Set log type
-     */
-
+    //Set log type
     if(type == WARNING) {
         strcpy(typeBuffer, warning);
     } else if(type == ERROR) {
         strcpy(typeBuffer, error);
     }
 
-    /*
-     * Allocate memory for log string
-     */
-
+    //Allocate memory for log string
     logSize = strlen(rawLog) + strlen(timestamp) + strlen(typeBuffer) + strlen(logStr) + 2; //+ '\n'
 
     log = malloc(logSize * sizeof(char));
 
-    /*
-     * format log string (date - message) and write it to file
-     */
-
+    //format log string (date - message) and write it to file
     sprintf(log, rawLog, timestamp, typeBuffer, logStr);
     fprintf(logFile, "%s\n", log);
 
