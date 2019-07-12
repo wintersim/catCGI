@@ -80,8 +80,9 @@ char* queryDb(sqlite3 *db, int nr) {
 uint32_t getCatCountDb(sqlite3 *db) {
     sqlite3_stmt *res;
     intmax_t iCount = -1;
+    const char sql[] = "\"SELECT COUNT(Id) FROM Cat\"";
 
-    int rc = sqlite3_prepare_v2(db, "SELECT COUNT(Id) FROM Cat", -1, &res, NULL); //Compile to byte-code
+    int rc = sqlite3_prepare_v2(db, sql, -1, &res, NULL); //Compile to byte-code
 
     if(rc != SQLITE_OK) {
         logEvent("Failed to fetch database data(count)", ERROR);
@@ -105,7 +106,7 @@ uint32_t getCatCountDb(sqlite3 *db) {
 }
 
 void updateClicks(sqlite3 *db) {
-    char sql[] = "UPDATE Clicks SET Clicks = Clicks + 1 WHERE Name = \"cat\";";
+    const char sql[] = "UPDATE Clicks SET Clicks = Clicks + 1 WHERE Name = \"cat\";";
     sqlite3_stmt *res;
 
     int rc = sqlite3_prepare_v2(db, sql, -1, &res, NULL); //Compile to byte-code
