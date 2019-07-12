@@ -80,7 +80,7 @@ char* queryDb(sqlite3 *db, int nr) {
 uint32_t getCatCountDb(sqlite3 *db) {
     sqlite3_stmt *res;
     intmax_t iCount = -1;
-    const char sql[] = "\"SELECT COUNT(Id) FROM Cat\";";
+    const char sql[] = "SELECT COUNT(Id) FROM Cat;";
 
     int rc = sqlite3_prepare_v2(db, sql, -1, &res, NULL); //Compile to byte-code
 
