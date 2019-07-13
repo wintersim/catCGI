@@ -37,8 +37,8 @@ void closeDb(sqlite3 *db) {
 
 char* queryDb(sqlite3 *db, int nr) {
     sqlite3_stmt *res; //statement to be sent to database
-    char *retStr = 0;
-    int rc;
+    char *retStr = NULL;
+    int rc = 0;
 
     //Command wich will be executed
     //@num gets replaced with function attribute 'nr'
@@ -63,7 +63,7 @@ char* queryDb(sqlite3 *db, int nr) {
     if(step == SQLITE_ROW) {
         const char *pTemp = (const char*) sqlite3_column_text(res, 0);
         size_t len = strlen(pTemp);
-        retStr = malloc(len * sizeof(char));
+        retStr = malloc(len * sizeof(char) + 1);
         strcpy(retStr, pTemp);
     }
 

@@ -26,6 +26,8 @@ int getMimeType(char *path);
 
 //#define DEBUG
 
+//#define ENABLE_KCGI
+
 #ifdef DEBUG
 
 /*
@@ -48,6 +50,7 @@ int main() {
     wait_for_gdb_to_attach(); //DEBUG
 #endif
 
+#ifdef ENABLE_KCGI
 
     //Initialize KCGI
     struct kreq r;
@@ -70,7 +73,7 @@ int main() {
         khttp_free(&r);
         return -1;
     }
-
+#endif
 
     //Open Database
     sqlite3 *db; //Database handle
@@ -88,7 +91,7 @@ int main() {
     }
 
     //Check content, which is sent with POST and deliver image tag
-
+#ifdef ENABLE_KCGI
     for(int i = 0; i < r.fieldsz; i++) {
         if(strncmp(r.fields[i].val, "cat", 3) == 0) { //strncmp to prevent buffer-overflow
             size_t rand = getRandomNumber(1, catCount); //Random Number
@@ -117,8 +120,19 @@ int main() {
     }
 #endif
 
+#endif
+
+#ifndef ENABLE_KCGI
+    size_t rand = getRandomNumber(1, catCount); //Random Number
+    char* str = calcImg(db, (int)rand); //get image-tag based on random number
+    printf("Number: %u\nImage: %s",(unsigned)rand, str);
+    free(str);
+#endif
+
     closeDb(db);
+#ifdef ENABLE_KCGI
     khttp_free(&r);
+#endif
     return EXIT_SUCCESS;
 }
 
@@ -179,23 +193,27 @@ char *imgToB64(const char *path, size_t *len) {
 
 int getMimeType(char *path) {
     char *delim = ".";
-    char *ptr;
-    char *cpy;
+    char *ptr = NULL;
+    char *cpy = NULL;
 
     size_t len = strlen(path);
-    cpy = malloc(len * sizeof(char));
+    cpy = malloc(len * sizeof(char) + 1);
     strncpy(cpy, path, len);
+    cpy[len] = 0;
 
     ptr = strtok(cpy, delim);
 
     while(ptr != NULL) {
         ptr = strtok(NULL, delim);
         if(strncmp(ptr, "jpg", 3) == 0) {
+            free(cpy);
             return KMIME_IMAGE_JPEG;
         } else if(strncmp(ptr, "png", 3) == 0) {
+            free(cpy);
             return KMIME_IMAGE_PNG;
         }
     }
+    free(cpy);
     return -100;
 }
 
@@ -224,7 +242,7 @@ char* calcImg(sqlite3 *db,int nr) {
     }
 
     size_t mimeLen = strlen(kmimetypes[mime]);
-    char *mimeStr = malloc(mimeLen * sizeof(char));
+    char *mimeStr = malloc(mimeLen * sizeof(char) + 1);
 
     //Copy mime String from kcgi variable to local buffer
     strncpy(mimeStr,kmimetypes[mime], mimeLen);
@@ -234,7 +252,7 @@ char* calcImg(sqlite3 *db,int nr) {
     len = strlen(rawTag) + b64len + mimeLen;
 
     //Allocate Memory for the resulting String
-    char *str = malloc(len * sizeof(char));
+    char *str = malloc(len * sizeof(char) + 1);
 
     //Format the String
     sprintf(str, rawTag, mimeStr ,b64);
@@ -242,6 +260,7 @@ char* calcImg(sqlite3 *db,int nr) {
     //Free all data and return final image-tag-string
     free(imgPath);
     free(b64);
+    free(mimeStr);
     return str;
 }
 
