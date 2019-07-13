@@ -134,9 +134,7 @@ char *imgToB64(const char *path, size_t *len) {
     FILE *file = fopen(path, "rb"); //Open file in binary read mode
 
     if(file == NULL) { //Check if file exists
-        char tmp[512] = "";
-        sprintf(tmp, "File: %s\n", path);
-        logEventv2(ERROR,"File could not be opened[imgToBase64] File: %s", tmp);
+        logEventv2(ERROR,"File could not be opened[imgToBase64] File: %s", path);
         return NULL;
     }
 
