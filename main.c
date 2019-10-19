@@ -18,11 +18,10 @@
 #include "database.h" /* Sqlite database */
 #include "logger.h" /* Event logger */
 
-char* calcImg(sqlite3 *db, int nr);
 void logClient(struct kreq *r);
 uint32_t getRandomNumber(uint32_t rangeStart, uint32_t rangeEnd);
-char *imgToB64(const char *path, size_t *len);
 int getMimeType(char *path);
+char *openImage(sqlite3 *db, int nr, long *pInt, int *pInt1);
 
 //#define DEBUG
 
@@ -48,32 +47,17 @@ int main() {
     wait_for_gdb_to_attach(); //DEBUG
 #endif
 
-
     //Initialize KCGI
     struct kreq r;
     const char *page = "index";
-    if (KCGI_OK != khttp_parse(&r, NULL, 0, &page, 1, 0)) {
+    struct kvalid catKey = {kvalid_stringne, "type"};
+    if (KCGI_OK != khttp_parse(&r, &catKey, 1, &page, 1, 0)) {
         logEvent("khttp_parse failed!", ERROR);
         return -1;
     }
 
-    khttp_head(&r, kresps[KRESP_STATUS], //200 OK
-               "%s", khttps[KHTTP_200]);
-    khttp_head(&r, kresps[KRESP_CONTENT_TYPE],
-               "%s", kmimetypes[KMIME_TEXT_HTML]); //text/html
-    khttp_body(&r);
-
-
-    // Only HTTP Post allowed
-    if(r.method != KMETHOD_POST) {
-        khttp_puts(&r, "Only HTTP-POST request allowed");
-        khttp_free(&r);
-        return -1;
-    }
-
-
     //Open Database
-    sqlite3 *db; //Database handle
+    sqlite3 *db;
 
     if(openDb(&db) != 0) {
         logEventv2(ERROR,"Failed to open databse");
@@ -87,26 +71,54 @@ int main() {
         return -1;
     }
 
-    //Check content, which is sent with POST and deliver image tag
+    // Only HTTP GET allowed
+    if(r.method != KMETHOD_GET) {
+        khttp_puts(&r, "Only HTTP-GET request allowed");
+        khttp_free(&r);
+        return -1;
+    }
 
-    for(int i = 0; i < r.fieldsz; i++) {
-        if(strncmp(r.fields[i].val, "cat", 3) == 0) { //strncmp to prevent buffer-overflow
-            size_t rand = getRandomNumber(1, catCount); //Random Number
+
+    //Check content, which is sent with GET and deliver image
+
+    long fileLen = 0;
+    int mimeType = 0;
+    int validRequest = 0;
+
+    struct kpair *p = NULL;
+
+    if((p = r.fieldmap[0])) {
+        if(!strncmp(p->parsed.s, "cat",3)) {
+            validRequest = 1;
+        }
+    }
+
+    if(validRequest) {
+        size_t rand = getRandomNumber(1, catCount); //Random Number
 #ifdef DEBUG
-            khttp_puts(&r, "<pre>");
+        khttp_puts(&r, "<pre>");
             khttp_puts(&r, "Random Number: ");
             char tmp[40] = {};
             sprintf(tmp,"%d", (int)rand);
             khttp_puts(&r, tmp);
             khttp_puts(&r, "</pre>");
 #endif
-            char* str = calcImg(db, (int)rand); //get image-tag based on random number
-            khttp_puts(&r, str);
-            updateClicks(db);
-            free(str);
-       } else {
-           logClient(&r);
-      }
+        char *data = openImage(db, (int) rand, &fileLen, &mimeType); //get image-tag based on random number
+
+        khttp_head(&r, kresps[KRESP_STATUS], //200 OK
+                   "%s", khttps[KHTTP_200]);
+        khttp_head(&r, kresps[KRESP_CONTENT_TYPE],
+                   "%s", kmimetypes[mimeType]);
+        khttp_head(&r, kresps[KRESP_CACHE_CONTROL], "no-store");
+        khttp_body(&r);
+
+        khttp_write(&r, data, fileLen);
+        updateClicks(db);
+        free(data);
+
+    } else {
+        khttp_write(&r, "\0",1);
+        logClient(&r);
     }
 
 #ifdef DEBUG
@@ -123,59 +135,15 @@ int main() {
     return EXIT_SUCCESS;
 }
 
-/*
- * Opens a image file and converts its data to base64
- * Warning: caller has to free resulting string
- */
 
-char *imgToB64(const char *path, size_t *len) {
-    char *buffer;
-
-    FILE *file = fopen(path, "rb"); //Open file in binary read mode
-
-    if(file == NULL) { //Check if file exists
-        logEventv2(ERROR,"File could not be opened[imgToBase64] File: %s", path);
-        return NULL;
-    }
-
-    //Get file length
-    fseek(file, 0, SEEK_END);
-    long fileLen = ftell(file);
-    fseek(file, 0, SEEK_SET);
-
-    //Allocate memory
-    buffer=(char *)malloc((size_t) (fileLen+1l));
-
-    if (!buffer)
-    {
-        logEventv2(ERROR,"Memory Error[imgToBase64]");
-        fclose(file);
-        return NULL;
-    }
-
-    //Read file contents into buffer
-    fread(buffer, (size_t) fileLen, 1, file);
-    fclose(file);
-
-    //Allocate Memory for b64 buffer
-
-    *len = sodium_base64_ENCODED_LEN((size_t)fileLen, sodium_base64_VARIANT_ORIGINAL);
-
-    char *b64 = malloc(*len * sizeof(char));
-
-    //Convert to B64
-    sodium_bin2base64(b64, sodium_base64_ENCODED_LEN((size_t)fileLen, sodium_base64_VARIANT_ORIGINAL), buffer, (size_t)fileLen, sodium_base64_VARIANT_ORIGINAL);
-
-    free(buffer);
-    return b64;
-
-}
 
 /*
  * Determines the mime type of an image based on it's file ending
  * Returns the index of the mime string in the kmimetypes[] array
  */
 
+//TODO Probably needs a rework, since it's mostly hacked together
+//TODO Maybe use File desriptors, instead of file extension
 int getMimeType(char *path) {
     char *delim = ".";
     char *ptr = NULL;
@@ -202,53 +170,6 @@ int getMimeType(char *path) {
     return ret;
 }
 
-/*
- * Generates the whole image tag which can be sent to client
- * Warning: caller has to free resulting string
- */
-
-char* calcImg(sqlite3 *db,int nr) {
-    const char *rawTag = "<img src=\"data:%s;base64,%s\">";
-    size_t len;
-
-    //Get path string from database
-    char *imgPath = queryDb(db, nr);
-
-    //Convert image to base64
-    size_t b64len;
-    char *b64 = imgToB64(imgPath, &b64len);
-
-    //Get mime type
-    int mime = getMimeType(imgPath);
-
-    if(mime < 0) {
-        logEventv2(ERROR, "Could not determine mime type[calcImg]");
-        return NULL;
-    }
-
-    size_t mimeLen = strlen(kmimetypes[mime]);
-    char *mimeStr = malloc((mimeLen + 1) * sizeof(char));
-
-    //Copy mime String from kcgi variable to local buffer
-    strncpy(mimeStr,kmimetypes[mime], mimeLen);
-    mimeStr[mimeLen] = '\0';
-
-    //Calculate final length
-    len = strlen(rawTag) + b64len + mimeLen;
-
-    //Allocate Memory for the resulting String
-    char *str = malloc((len + 1) * sizeof(char));
-
-    //Format the String
-    sprintf(str, rawTag, mimeStr ,b64);
-
-    //Free all data and return final image-tag-string
-    free(imgPath);
-    free(b64);
-    free(mimeStr);
-    return str;
-}
-
 void logClient(struct kreq *r){
     char *ipAddr = 0;
     char *userAgent = 0;
@@ -272,4 +193,46 @@ void logClient(struct kreq *r){
  */
 uint32_t getRandomNumber(uint32_t rangeStart, uint32_t rangeEnd){
     return randombytes_uniform(rangeEnd) + rangeStart;
+}
+
+char *openImage(sqlite3 *db, int nr, long *pInt, int *mimeType) {
+    char *fileBuffer;
+
+    char *path = queryDb(db, nr);
+
+    if(path == NULL) {
+        logEventv2(ERROR, "Failed to load path from db");
+        return NULL;
+    }
+
+    *mimeType = getMimeType(path);
+
+    FILE *file = fopen(path, "rb"); //Open file in binary read mode
+
+    if(file == NULL) { //Check if file exists
+        logEventv2(ERROR,"File could not be opened[imgToBase64] File: %s", path);
+        return NULL;
+    }
+
+    //Get file length
+    fseek(file, 0, SEEK_END);
+    *pInt = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    //Allocate memory
+    fileBuffer=(char *)malloc((size_t) ((*pInt)+1l));
+
+    if (!fileBuffer)
+    {
+        logEventv2(ERROR,"Memory Error[openImage]");
+        fclose(file);
+        return NULL;
+    }
+
+    //Read file contents into buffer
+    fread(fileBuffer, (size_t) *pInt, 1, file);
+    fclose(file);
+
+    free(path);
+    return fileBuffer;
 }
