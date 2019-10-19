@@ -3,7 +3,7 @@
 
 ## Usage
 ```html
-<img src="cgi-bin/catAjax?type=cat">
+<img src="cgi-bin/catCgi?type=cat">
 ```
 
 
