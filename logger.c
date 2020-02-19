@@ -45,7 +45,7 @@ void logEvent(const char *logStr, logType type){
     }
 
     //Allocate memory for log string
-    logSize = strlen(rawLog) + strlen(timestamp) + strlen(typeBuffer) + strlen(logStr) + 2; //+ '\n'
+    logSize = strlen(rawLog) + strlen(timestamp) + strlen(typeBuffer) + strlen(logStr) + 2; //+ '\n\0'
 
     log = malloc(logSize * sizeof(char));
 
